@@ -1,0 +1,14 @@
+[project]
+name = "repairer"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28.1",
+    "ipykernel>=7.3.0",
+    "ipython>=9.15.0",
+    "pytest>=9.1.1",
+    "pytest-watch>=4.2.0",
+    "rich>=15.0.0",
+    "rope>=1.14.0",
+    "yapf>=0.43.0",
+]
