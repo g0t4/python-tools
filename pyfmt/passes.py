@@ -124,10 +124,23 @@ class IndentationRepairPass:
             raw_indent = len(expanded) - len(content)
             if info.protected or info.continuation or not info.code:
                 repaired.append(expanded + ending)
-                if not info.protected and not info.continuation:
+                comment_is_first_line_of_suite = (
+                    content.startswith("#")
+                    and previous_opened_suite
+                    and previous_indent is not None
+                    and raw_indent == previous_indent + self.INDENT
+                )
+                if (
+                    content.startswith("#")
+                    and not info.protected
+                    and not info.continuation
+                    and not comment_is_first_line_of_suite
+                ):
                     # A comment-only line is a visual suite boundary for
                     # under-indentation inference. Keep ``previous_indent`` so
-                    # it can still anchor a clear over-indentation repair.
+                    # it can still anchor a clear over-indentation repair. A
+                    # correctly indented comment immediately beneath a suite
+                    # header is part of that suite, rather than a separator.
                     blocks.clear()
                     previous_opened_suite = False
                 continue

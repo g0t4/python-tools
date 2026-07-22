@@ -70,6 +70,19 @@ def test_comment_group_separator_does_not_disable_overindent_repair() -> None:
     assert repair(before) == after
 
 
+def test_comment_as_first_line_of_if_body_preserves_suite_indentation() -> None:
+    source = (
+        "async def handle(connection, keystroke):\n"
+        "    e = keystroke.keycode == iterm2.Keycode.ANSI_F\n"
+        "    if e and control and shift and command:\n"
+        "        # TODO merge with ANSI_B?\n"
+        "        await copy_screen_to_clipboard(connection, history=False)\n"
+        "        return\n"
+    )
+
+    assert repair(source) == source
+
+
 def test_new_top_level_definition_is_a_boundary_without_blank_line() -> None:
     source = "def one():\n    pass\ndef two():\n    pass\n"
     assert repair(source) == source
