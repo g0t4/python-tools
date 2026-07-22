@@ -26,3 +26,18 @@ Run the tests with:
 ```console
 uv run pytest
 ```
+
+## Terminology and references
+
+The tooling and tests use Python's language-reference terminology where it is
+helpful. These official references are useful when a term is unfamiliar:
+
+- [Full Python grammar](https://docs.python.org/3/reference/grammar.html) — the
+  parser's rules for statements, compound statements, and their blocks (often
+  called suites in Python discussions and older grammar terminology).
+- [Lexical analysis](https://docs.python.org/3/reference/lexical_analysis.html)
+  — physical and logical lines, comments, explicit and implicit line joining,
+  indentation, blank lines, and source encodings.
+- [`tokenize` standard-library module](https://docs.python.org/3/library/tokenize.html)
+  — Python's token stream, including `INDENT`, `DEDENT`, comments, and encoding
+  detection.
