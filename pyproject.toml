@@ -1,5 +1,5 @@
 [project]
-name = "repairer"
+name = "pyfmt"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
@@ -13,3 +13,6 @@ dependencies = [
     "rope>=1.14.0",
     "yapf>=0.43.0",
 ]
+
+[project.scripts]
+pyfmt = "pyfmt.cli:main"
