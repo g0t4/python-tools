@@ -1,0 +1,7 @@
+use chatgpt session for test cases
+- setup cases
+- have codex impl the repairer only
+- then dogfood the repairer alone and see what you think is missing
+  repairer is largely for fixing broken code (i.e. invalid indent or non-sensical indent)
+   though I could see an argument that it should also fix all whitespace issues to follow my conventions
+- then add tests for that and ask for formatter (if needed)
