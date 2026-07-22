@@ -124,6 +124,12 @@ class IndentationRepairPass:
             raw_indent = len(expanded) - len(content)
             if info.protected or info.continuation or not info.code:
                 repaired.append(expanded + ending)
+                if not info.protected and not info.continuation:
+                    # A comment-only line is a visual suite boundary for
+                    # under-indentation inference. Keep ``previous_indent`` so
+                    # it can still anchor a clear over-indentation repair.
+                    blocks.clear()
+                    previous_opened_suite = False
                 continue
 
             indent = raw_indent

@@ -47,6 +47,29 @@ def test_blank_line_ends_conservative_inference() -> None:
     assert repair(source) == source
 
 
+def test_comment_group_separator_stops_underindent_inference() -> None:
+    source = (
+        "async def handle(connection, keystroke):\n"
+        "    e = keystroke.keycode == iterm2.Keycode.ANSI_MINUS\n"
+        "    if e and control and shift and command:\n"
+        "        await smaller_font_wes_stops(connection)\n"
+        "        return\n"
+        "    #\n"
+        "e = keystroke.keycode == iterm2.Keycode.ANSI_EQUAL\n"
+        "if e and control and shift and command:\n"
+        "    await bigger_font_wes_stops(connection)\n"
+        "    return\n"
+    )
+
+    assert repair(source) == source
+
+
+def test_comment_group_separator_does_not_disable_overindent_repair() -> None:
+    before = "def foo():\n    first = 1\n    # next group\n        second = 2\n"
+    after = "def foo():\n    first = 1\n    # next group\n    second = 2\n"
+    assert repair(before) == after
+
+
 def test_new_top_level_definition_is_a_boundary_without_blank_line() -> None:
     source = "def one():\n    pass\ndef two():\n    pass\n"
     assert repair(source) == source
