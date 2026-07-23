@@ -148,3 +148,57 @@ def test_is_idempotent() -> None:
     source = "def foo():\n        if ready:\nvalue = 1\n"
     once = repair(source)
     assert repair(once) == once
+
+
+def test_repairs_consecutive_block_lines_after_a_multiline_call() -> None:
+    before = (
+        "def configure_logging(level):\n"
+        "    state_dir = Path(\n"
+        "    get_state_home()\n"
+        ")\n"
+        "log_dir = state_dir / 'logs'\n"
+        "log_dir.mkdir(parents=True, exist_ok=True)\n"
+    )
+    after = (
+        "def configure_logging(level):\n"
+        "    state_dir = Path(\n"
+        "    get_state_home()\n"
+        ")\n"
+        "    log_dir = state_dir / 'logs'\n"
+        "    log_dir.mkdir(parents=True, exist_ok=True)\n"
+    )
+
+    assert repair(before) == after
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="continuations are preserved and blank lines end block inference",
+)
+def test_repairs_a_broken_block_across_continuations_and_blank_lines() -> None:
+    before = (
+        "def configure_logging(level):\n"
+        "    state_dir = Path(\n"
+        "    get_state_home()\n"
+        ")\n"
+        "log_dir = state_dir / 'logs'\n"
+        "log_dir.mkdir(parents=True, exist_ok=True)\n"
+        "\n"
+        "log_file = open(log_dir / 'server.log', 'a')\n"
+        "\n"
+        "    enable_logging(level)\n"
+    )
+    after = (
+        "def configure_logging(level):\n"
+        "    state_dir = Path(\n"
+        "        get_state_home()\n"
+        "    )\n"
+        "    log_dir = state_dir / 'logs'\n"
+        "    log_dir.mkdir(parents=True, exist_ok=True)\n"
+        "\n"
+        "    log_file = open(log_dir / 'server.log', 'a')\n"
+        "\n"
+        "    enable_logging(level)\n"
+    )
+
+    assert repair(before) == after
