@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "stream-spy"
+version = "0.1.0"
+description = "Intercept and monitor subprocess streams with JSON parsing and syntax highlighting"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "rich>=13.0",
+]
+
+[project.scripts]
+stream-spy = "stream_spy.__main__:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
