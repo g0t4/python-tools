@@ -1,0 +1,10 @@
+# need to get this working (stream-spy wraps my mcp server for semantic_grep)
+$ASK_REPO/lua/ask-openai/rag/mcp_server/tests/stdio/stream-spy__semantic_grep_list_tools.fish
+# ok to copy this script here too
+
+nothing shows from STDOUT of mcp server???
+- this MCP server works fine w/o stream-spy BTW... use this to run:
+$ASK_REPO/lua/ask-openai/rag/mcp_server/tests/stdio/semantic_grep_list_tools.fish  
+- observe both STDIN/STDOUT working to/from mcp server
+
+so, stream spy either swallows STDOUT or is sending it elsewhere??
