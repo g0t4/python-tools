@@ -90,7 +90,7 @@ class _Scanner:
 
 
 class IndentationRepairPass:
-    """Repair indentation only where nearby suite structure makes it clear.
+    """Repair indentation only where nearby block structure makes it clear.
 
     A blank line is treated as an inference boundary.  This is intentionally
     conservative: later passes can grow smarter without making this pass
@@ -106,27 +106,27 @@ class IndentationRepairPass:
         repaired: list[str] = []
         blocks: list[tuple[int, bool]] = []
         previous_indent: int | None = None
-        previous_opened_suite = False
+        previous_opened_block = False
 
         for line in lines:
-            body, ending = self._split_ending(line)
-            expanded = body.expandtabs(self.INDENT)
+            line_text, ending = self._split_ending(line)
+            expanded = line_text.expandtabs(self.INDENT)
             content = expanded.lstrip(" ")
             info = scanner.scan(content)
 
             if not content:
-                repaired.append(body + ending)
+                repaired.append(line_text + ending)
                 blocks.clear()
                 previous_indent = None
-                previous_opened_suite = False
+                previous_opened_block = False
                 continue
 
             raw_indent = len(expanded) - len(content)
             if info.protected or info.continuation or not info.code:
                 repaired.append(expanded + ending)
-                comment_is_first_line_of_suite = (
+                comment_is_first_line_of_block = (
                     content.startswith("#")
-                    and previous_opened_suite
+                    and previous_opened_block
                     and previous_indent is not None
                     and raw_indent == previous_indent + self.INDENT
                 )
@@ -134,15 +134,15 @@ class IndentationRepairPass:
                     content.startswith("#")
                     and not info.protected
                     and not info.continuation
-                    and not comment_is_first_line_of_suite
+                    and not comment_is_first_line_of_block
                 ):
-                    # A comment-only line is a visual suite boundary for
+                    # A comment-only line is a visual block boundary for
                     # under-indentation inference. Keep ``previous_indent`` so
                     # it can still anchor a clear over-indentation repair. A
-                    # correctly indented comment immediately beneath a suite
-                    # header is part of that suite, rather than a separator.
+                    # correctly indented comment immediately beneath a block
+                    # header is part of that block, rather than a separator.
                     blocks.clear()
-                    previous_opened_suite = False
+                    previous_opened_block = False
                 continue
 
             indent = raw_indent
@@ -150,7 +150,7 @@ class IndentationRepairPass:
                 self._TOP_LEVEL_BOUNDARIES
             )
 
-            if previous_opened_suite and previous_indent is not None:
+            if previous_opened_block and previous_indent is not None:
                 indent = previous_indent + self.INDENT
             elif self._is_clause(info.code) and blocks:
                 header_indent, header_is_case = blocks[-1]
@@ -159,10 +159,10 @@ class IndentationRepairPass:
                     indent += self.INDENT
                 blocks.pop()
             else:
-                valid_suite_indents = {
+                valid_block_indents = {
                     header_indent + self.INDENT for header_indent, _ in blocks
                 }
-                if raw_indent in valid_suite_indents:
+                if raw_indent in valid_block_indents:
                     indent = raw_indent
                     while blocks and blocks[-1][0] >= indent:
                         blocks.pop()
@@ -177,8 +177,8 @@ class IndentationRepairPass:
 
             repaired.append(" " * indent + content + ending)
             previous_indent = indent
-            previous_opened_suite = self._opens_suite(info.code)
-            if previous_opened_suite:
+            previous_opened_block = self._opens_block(info.code)
+            if previous_opened_block:
                 blocks.append((indent, info.code.startswith("case ")))
 
         return repaired
@@ -192,7 +192,7 @@ class IndentationRepairPass:
         return line, ""
 
     @staticmethod
-    def _opens_suite(code: str) -> bool:
+    def _opens_block(code: str) -> bool:
         return code.endswith(":")
 
     def _is_clause(self, code: str) -> bool:

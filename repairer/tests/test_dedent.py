@@ -38,7 +38,7 @@ def foo():
         ),
     ],
 )
-def test_repairs_clear_suite_indentation(before: str, after: str) -> None:
+def test_repairs_clear_block_indentation(before: str, after: str) -> None:
     assert repair(before) == after
 
 
@@ -70,7 +70,7 @@ def test_comment_group_separator_does_not_disable_overindent_repair() -> None:
     assert repair(before) == after
 
 
-def test_comment_as_first_line_of_if_body_preserves_suite_indentation() -> None:
+def test_comment_as_first_line_of_if_block_preserves_block_indentation() -> None:
     source = (
         "async def handle(connection, keystroke):\n"
         "    e = keystroke.keycode == iterm2.Keycode.ANSI_F\n"
