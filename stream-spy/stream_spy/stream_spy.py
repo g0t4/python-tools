@@ -9,6 +9,7 @@ communication between clients and servers.
 
 import asyncio
 import json
+import os
 import signal
 import sys
 from argparse import ArgumentParser, Namespace
@@ -141,8 +142,12 @@ class StreamMonitor:
         if self._file_logger is not None:
             self._file_logger.write_raw(text)
 
-    async def run(self) -> None:
-        """Run all stream monitoring tasks concurrently."""
+    async def run(self) -> tuple[asyncio.Task[None], asyncio.Task[None]]:
+        """Run all stream monitoring tasks concurrently.
+
+        Returns:
+            Tuple of (stdout_task, stderr_task) for external cancellation.
+        """
         # Handle stdin - read from sys.stdin and forward to subprocess
         await self._handle_stdin()
 
@@ -155,6 +160,7 @@ class StreamMonitor:
         )
 
         await asyncio.gather(stdout_task, stderr_task)
+        return stdout_task, stderr_task
 
     async def _handle_stdin(self) -> None:
         """Read from sys.stdin and forward to subprocess stdin."""
@@ -204,16 +210,22 @@ class StreamMonitor:
 
 async def main_async(args: Namespace) -> int:
     """Main async entry point."""
-    # Set up signal handler for graceful shutdown
     loop = asyncio.get_running_loop()
 
     process: asyncio.subprocess.Process | None = None
+    stdout_task: asyncio.Task[None] | None = None
+    stderr_task: asyncio.Task[None] | None = None
 
     def signal_handler() -> None:
         """Handle SIGINT/SIGTERM by terminating the subprocess."""
-        nonlocal process
-        if process is not None and not process.done():
-            process.cancel()
+        # Cancel stream processing tasks
+        if stdout_task is not None and not stdout_task.done():
+            stdout_task.cancel()
+        if stderr_task is not None and not stderr_task.done():
+            stderr_task.cancel()
+        # Terminate the subprocess (returncode is None if still running)
+        if process is not None and process.returncode is None:
+            os.kill(process.pid, signal.SIGTERM)
 
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, signal_handler)
@@ -224,15 +236,15 @@ async def main_async(args: Namespace) -> int:
         file_logger = FileLogger(Path(args.log_file))
         await file_logger.open()
 
-    # Spawn subprocess first
-    process = await asyncio.create_subprocess_exec(
-        *args.command,
-        stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-
     try:
+        # Spawn subprocess first
+        process = await asyncio.create_subprocess_exec(
+            *args.command,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
         # Create stream monitor with the spawned process
         monitor = StreamMonitor(
             process,
@@ -242,8 +254,16 @@ async def main_async(args: Namespace) -> int:
             expand_json=args.expand,
             file_logger=file_logger,
         )
-        await monitor.run()
+
+        # Start monitoring and capture task references
+        stdout_task, stderr_task = await monitor.run()
+
         return await process.wait()
+    except asyncio.CancelledError:
+        # Handle cancellation from signal handler
+        if process is not None and process.returncode is None:
+            os.kill(process.pid, signal.SIGTERM)
+        raise
     finally:
         # Cleanup
         if file_logger:
